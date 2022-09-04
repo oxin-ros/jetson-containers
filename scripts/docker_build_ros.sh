@@ -50,9 +50,9 @@ source scripts/opencv_version.sh
 
 # define default options
 if [[ $L4T_RELEASE -eq 34 || $L4T_RELEASE -eq 35 ]]; then   # JetPack 5.x / Ubuntu 20.04
-	SUPPORTED_ROS_DISTROS=("noetic" "foxy" "galactic" "humble")
+    SUPPORTED_ROS_DISTROS=("noetic" "foxy" "galactic" "humble")
 else
-	SUPPORTED_ROS_DISTROS=("melodic" "noetic" "eloquent" "foxy" "galactic" "humble")
+    SUPPORTED_ROS_DISTROS=("melodic" "noetic" "eloquent" "foxy" "galactic" "humble")
 fi
 
 SUPPORTED_ROS_PACKAGES=("ros_base" "ros_core" "desktop")
@@ -84,7 +84,7 @@ while :; do
         --distror=)         # Handle the case of an empty --distro=
             die 'ERROR: "--distro" requires a non-empty option argument.'
             ;;
-	   --package)
+       --package)
             if [ "$2" ]; then
                 ROS_PACKAGE=$2
                 shift
@@ -98,11 +98,11 @@ while :; do
         --package=)         # Handle the case of an empty --distro=
             die 'ERROR: "--package" requires a non-empty option argument.'
             ;;
-	   --with-pytorch)
+       --with-pytorch)
             WITH_PYTORCH="on"
             ;;
-	   --with-slam)
-		  WITH_PYTORCH="on"
+       --with-slam)
+          WITH_PYTORCH="on"
             WITH_SLAM="on"
             ;;
         --)              # End of all options.
@@ -125,20 +125,20 @@ echo "WITH_PYTORCH: $WITH_PYTORCH"
 echo "WITH_SLAM:    $WITH_SLAM"
 
 if [[ "$ROS_DISTRO" == "all" ]]; then
-	BUILD_DISTRO=${SUPPORTED_ROS_DISTROS[@]}
+    BUILD_DISTRO=${SUPPORTED_ROS_DISTROS[@]}
 else
-	BUILD_DISTRO=($ROS_DISTRO)
+    BUILD_DISTRO=($ROS_DISTRO)
 fi
 
 if [[ "$ROS_PACKAGE" == "all" ]]; then
-	BUILD_PACKAGES=${SUPPORTED_ROS_PACKAGES[@]}
+    BUILD_PACKAGES=${SUPPORTED_ROS_PACKAGES[@]}
 else
-	BUILD_PACKAGES=($ROS_PACKAGE)
-	
-	if [[ ! " ${SUPPORTED_ROS_PACKAGES[@]} " =~ " ${ROS_PACKAGE} " ]]; then
-		echo "error -- '$ROS_PACKAGE' isn't one of the supported ROS packages:"
-		echo "              ${SUPPORTED_ROS_PACKAGES[@]}"
-		exit 1
+    BUILD_PACKAGES=($ROS_PACKAGE)
+    
+    if [[ ! " ${SUPPORTED_ROS_PACKAGES[@]} " =~ " ${ROS_PACKAGE} " ]]; then
+        echo "error -- '$ROS_PACKAGE' isn't one of the supported ROS packages:"
+        echo "              ${SUPPORTED_ROS_PACKAGES[@]}"
+        exit 1
      fi
 fi
 
@@ -147,48 +147,48 @@ fi
 BASE_IMAGE_PYTORCH="jetson-inference:r$L4T_VERSION"
 
 if [[ "$(sudo docker images -q $BASE_IMAGE_PYTORCH 2> /dev/null)" == "" ]]; then
-	BASE_IMAGE_PYTORCH="dustynv/$BASE_IMAGE_PYTORCH"
+    BASE_IMAGE_PYTORCH="dustynv/$BASE_IMAGE_PYTORCH"
 fi
 
 
 build_ros()
 {
-	local distro=$1
-	local package=$2
-	local base_image=$3
-	local extra_tag=$4
-	local dockerfile=${5:-"Dockerfile.ros.$distro"}
-	local container_tag="ros:${distro}-${extra_tag}l4t-r${L4T_VERSION}"
-	
-	echo ""
-	echo "Building container $container_tag"
-	echo "BASE_IMAGE=$base_image"
-	echo ""
-	
-	sh ./scripts/docker_build.sh $container_tag $dockerfile \
-			--build-arg ROS_PKG=$package \
-			--build-arg BASE_IMAGE=$base_image \
-			--build-arg OPENCV_URL=$OPENCV_URL \
-			--build-arg OPENCV_DEB=$OPENCV_DEB
-			
-	# restore opencv.csv mounts
-	if [ -f "$CV_CSV.backup" ]; then
-		sudo mv $CV_CSV.backup $CV_CSV
-	fi
+    local distro=$1
+    local package=$2
+    local base_image=$3
+    local extra_tag=$4
+    local dockerfile=${5:-"Dockerfile.ros.$distro"}
+    local container_tag="ros:${distro}-${extra_tag}l4t-r${L4T_VERSION}"
+    
+    echo ""
+    echo "Building container $container_tag"
+    echo "BASE_IMAGE=$base_image"
+    echo ""
+    
+    sh ./scripts/docker_build.sh $container_tag $dockerfile \
+            --build-arg ROS_PKG=$package \
+            --build-arg BASE_IMAGE=$base_image \
+            --build-arg OPENCV_URL=$OPENCV_URL \
+            --build-arg OPENCV_DEB=$OPENCV_DEB
+            
+    # restore opencv.csv mounts
+    if [ -f "$CV_CSV.backup" ]; then
+        sudo mv $CV_CSV.backup $CV_CSV
+    fi
 }
 
 
 for DISTRO in ${BUILD_DISTRO[@]}; do
-	for PACKAGE in ${BUILD_PACKAGES[@]}; do
-		build_ros $DISTRO $PACKAGE $BASE_IMAGE "`echo $PACKAGE | tr '_' '-'`-"
-		
-		if [[ "$WITH_PYTORCH" == "on" && "$DISTRO" != "melodic" && "$DISTRO" != "eloquent" ]]; then
-			build_ros $DISTRO $PACKAGE $BASE_IMAGE_PYTORCH "pytorch-"
-		fi
-		
-		if [[ "$WITH_SLAM" == "on" && ("$DISTRO" == "foxy" || "$DISTRO" == "galactic") ]]; then
-			BASE_IMAGE_SLAM="ros:$DISTRO-pytorch-l4t-r$L4T_VERSION"
-			build_ros $DISTRO $PACKAGE $BASE_IMAGE_SLAM "slam-" "Dockerfile.ros.slam"
-		fi
-	done
+    for PACKAGE in ${BUILD_PACKAGES[@]}; do
+        build_ros $DISTRO $PACKAGE $BASE_IMAGE "`echo $PACKAGE | tr '_' '-'`-"
+        
+        if [[ "$WITH_PYTORCH" == "on" && "$DISTRO" != "melodic" && "$DISTRO" != "eloquent" ]]; then
+            build_ros $DISTRO $PACKAGE $BASE_IMAGE_PYTORCH "pytorch-"
+        fi
+        
+        if [[ "$WITH_SLAM" == "on" && ("$DISTRO" == "foxy" || "$DISTRO" == "galactic") ]]; then
+            BASE_IMAGE_SLAM="ros:$DISTRO-pytorch-l4t-r$L4T_VERSION"
+            build_ros $DISTRO $PACKAGE $BASE_IMAGE_SLAM "slam-" "Dockerfile.ros.slam"
+        fi
+    done
 done

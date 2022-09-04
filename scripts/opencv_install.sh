@@ -38,30 +38,30 @@ rm -rf opencv
 PYTHON3_VERSION=`python3 -c 'import sys; version=sys.version_info[:3]; print("{0}.{1}".format(*version))'`
 
 if [ $ARCH = "aarch64" ]; then
-	local_include_path="/usr/local/include/opencv4"
-	local_python_path="/usr/local/lib/python${PYTHON3_VERSION}/dist-packages/cv2"
+    local_include_path="/usr/local/include/opencv4"
+    local_python_path="/usr/local/lib/python${PYTHON3_VERSION}/dist-packages/cv2"
 
-	if [ -d "$local_include_path" ]; then
-		echo "$local_include_path already exists, replacing..."
-		rm -rf $local_include_path
-	fi
-	
-	if [ -d "$local_python_path" ]; then
-		echo "$local_python_path already exists, replacing..."
-		rm -rf $local_python_path
-	fi
-	
-	ln -s /usr/include/opencv4 $local_include_path
-	ln -s /usr/lib/python${PYTHON3_VERSION}/dist-packages/cv2 $local_python_path
-	
+    if [ -d "$local_include_path" ]; then
+        echo "$local_include_path already exists, replacing..."
+        rm -rf $local_include_path
+    fi
+    
+    if [ -d "$local_python_path" ]; then
+        echo "$local_python_path already exists, replacing..."
+        rm -rf $local_python_path
+    fi
+    
+    ln -s /usr/include/opencv4 $local_include_path
+    ln -s /usr/lib/python${PYTHON3_VERSION}/dist-packages/cv2 $local_python_path
+    
 elif [ $ARCH = "x86_64" ]; then
-	opencv_conda_path="/opt/conda/lib/python${PYTHON3_VERSION}/site-packages/cv2"
-	
-	if [ -d "$opencv_conda_path" ]; then
-		echo "$opencv_conda_path already exists, replacing..."
-		rm -rf $opencv_conda_path
-		ln -s /usr/lib/python${PYTHON3_VERSION}/site-packages/cv2 $opencv_conda_path
-	fi
+    opencv_conda_path="/opt/conda/lib/python${PYTHON3_VERSION}/site-packages/cv2"
+    
+    if [ -d "$opencv_conda_path" ]; then
+        echo "$opencv_conda_path already exists, replacing..."
+        rm -rf $opencv_conda_path
+        ln -s /usr/lib/python${PYTHON3_VERSION}/site-packages/cv2 $opencv_conda_path
+    fi
 fi
 
 # test importing cv2

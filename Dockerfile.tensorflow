@@ -32,31 +32,31 @@ ARG MAKEFLAGS=-j$(nproc)
 RUN printenv
 
 
-    
+
 #
 # install prerequisites - https://docs.nvidia.com/deeplearning/frameworks/install-tf-jetson-platform/index.html#prereqs
 #
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
           python3-pip \
-		  python3-dev \
-		  gfortran \
-		  build-essential \
-		  liblapack-dev \ 
-		  libblas-dev \
-		  libhdf5-serial-dev \
-		  hdf5-tools \
-		  libhdf5-dev \
-		  zlib1g-dev \
-		  zip \
-		  unzip \
-		  libjpeg8-dev \
-		  autoconf \ 
-		  automake \
-		  libtool \
-		  curl \
-		  make \
-		  g++ \
+          python3-dev \
+          gfortran \
+          build-essential \
+          liblapack-dev \
+          libblas-dev \
+          libhdf5-serial-dev \
+          hdf5-tools \
+          libhdf5-dev \
+          zlib1g-dev \
+          zip \
+          unzip \
+          libjpeg8-dev \
+          autoconf \
+          automake \
+          libtool \
+          curl \
+          make \
+          g++ \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
@@ -99,12 +99,12 @@ RUN cd /tmp && \
     rm -rf ${PROTOC_DIR}
 
 #RUN python3 setup.py install --cpp_implementation && \
-#RUN pip3 install protobuf==${PROTOBUF_VERSION} --install-option="--cpp_implementation" --no-cache-dir --verbose 
-    
+#RUN pip3 install protobuf==${PROTOBUF_VERSION} --install-option="--cpp_implementation" --no-cache-dir --verbose
+
 RUN pip3 show protobuf && \
     protoc --version
 
-    
+
 #
 # install Python TF dependencies
 #
@@ -114,7 +114,7 @@ RUN pip3 install --no-cache-dir --verbose future==0.18.2 mock==3.0.5 keras_prepr
 
 
 #
-# TensorFlow 
+# TensorFlow
 #
 ARG TENSORFLOW_URL=https://developer.download.nvidia.com/compute/redist/jp/v44/tensorflow/tensorflow-1.15.3+nv20.9-cp36-cp36m-linux_aarch64.whl
 ARG TENSORFLOW_WHL=tensorflow-1.15.3+nv20.9-cp36-cp36m-linux_aarch64.whl
@@ -124,7 +124,7 @@ RUN wget --quiet --show-progress --progress=bar:force:noscroll --no-check-certif
     rm ${TENSORFLOW_WHL}
 
 
-# 
+#
 # install OpenCV (with CUDA)
 #
 ARG OPENCV_URL=https://nvidia.box.com/shared/static/5v89u6g5rb62fpz4lh0rz531ajo2t5ef.gz
@@ -134,7 +134,7 @@ COPY scripts/opencv_install.sh /tmp/opencv_install.sh
 RUN cd /tmp && ./opencv_install.sh ${OPENCV_URL} ${OPENCV_DEB}
 
 
-# 
+#
 # PyCUDA
 #
 ENV PATH="/usr/local/cuda/bin:${PATH}"
