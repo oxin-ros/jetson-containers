@@ -85,12 +85,12 @@ if [[ "$CONTAINERS" == "pytorch" || "$CONTAINERS" == "all" ]]; then
         #            "v0.9.0" \
         #            "v0.8.0"
             
-        # PyTorch v1.9.0
-        build_pytorch "https://nvidia.box.com/shared/static/h1z9sw4bb1ybi0rm3tu8qdj8hs05ljbm.whl" \
-                    "torch-1.9.0-cp36-cp36m-linux_aarch64.whl" \
-                    "l4t-pytorch:r$L4T_VERSION-pth1.9-py3" \
-                    "v0.10.0" \
-                    "v0.9.0"
+        # # PyTorch v1.9.0
+        # build_pytorch "https://nvidia.box.com/shared/static/h1z9sw4bb1ybi0rm3tu8qdj8hs05ljbm.whl" \
+        #             "torch-1.9.0-cp36-cp36m-linux_aarch64.whl" \
+        #             "l4t-pytorch:r$L4T_VERSION-pth1.9-py3" \
+        #             "v0.10.0" \
+        #             "v0.9.0"
                     
         # PyTorch v1.10.0
         build_pytorch "https://nvidia.box.com/shared/static/fjtbno0vpo676a25cgvuqc1wty0fkkg6.whl" \
@@ -100,8 +100,8 @@ if [[ "$CONTAINERS" == "pytorch" || "$CONTAINERS" == "all" ]]; then
                     "v0.10.0"
                     
         # PyTorch v1.11.0
-        build_pytorch "https://developer.download.nvidia.com/compute/redist/jp/v461/pytorch/torch-1.11.0a0+17540c5-cp36-cp36m-linux_aarch64.whl" \
-                    "torch-1.11.0a0+17540c5-cp36-cp36m-linux_aarch64.whl" \
+        build_pytorch "https://developer.download.nvidia.com/compute/redist/jp/v461/pytorch/torch-1.11.0a0+17540c5+nv22.01-cp36-cp36m-linux_aarch64.whl" \
+                    "torch-1.11.0a0+17540c5+nv22.01-cp36-cp36m-linux_aarch64.whl" \
                     "l4t-pytorch:r$L4T_VERSION-pth1.11-py3" \
                     "v0.11.3" \
                     "v0.10.2"
