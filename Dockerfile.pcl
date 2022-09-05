@@ -1,0 +1,106 @@
+#
+# This is a Dockerfile for building PCL debian packages
+# with CUDA enabled.  You can then take the output .deb packages and 
+# install them into other containers.
+#
+# See scripts/docker_build_pcl.sh to run it
+#
+
+ARG BASE_IMAGE=nvcr.io/nvidia/l4t-base:r32.4.4
+FROM ${BASE_IMAGE}
+
+#
+# setup environment
+#
+ENV DEBIAN_FRONTEND=noninteractive
+ENV CUDA_HOME="/usr/local/cuda"
+ENV PATH="/usr/local/cuda/bin:${PATH}"
+ENV LD_LIBRARY_PATH="/usr/local/cuda/lib64:${LD_LIBRARY_PATH}"
+
+WORKDIR /opt
+
+# install build dependencies
+COPY scripts/pcl_install_deps.sh pcl_install_deps.sh
+RUN ./pcl_install_deps.sh
+
+# Install Kitware APT repo.
+# This repo contains updated CMake & Ninja packages.
+RUN wget -qq https://apt.kitware.com/kitware-archive.sh \
+    && sudo chmod +x kitware-archive.sh \
+    && ./kitware-archive.sh \
+    && rm ./kitware-archive.sh
+
+# Install updated CMake & Ninja.
+RUN apt-get update \
+    && apt-get install -y \
+        cmake \
+        ninja-build \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Install Eigen3.
+# Eigen patch (https://eigen.tuxfamily.org/bz/show_bug.cgi?id=1462) to fix issue metioned
+# in https://github.com/PointCloudLibrary/pcl/issues/3729 is available in Eigen 3.3.7.
+# Not needed from 20.04 since it is the default version from apt.
+ARG EIGEN_VERSION="3.3.7"
+RUN wget --quiet --show-progress --progress=bar:force:noscroll https://gitlab.com/libeigen/eigen/-/archive/${EIGEN_VERSION}/eigen-${EIGEN_VERSION}.tar.gz \
+    && tar -xf eigen-${EIGEN_VERSION}.tar.gz && rm eigen-${EIGEN_VERSION}.tar.gz \
+    && mkdir eigen-${EIGEN_VERSION}/build \
+    && cd eigen-${EIGEN_VERSION}/build \
+    && cmake \
+        -G Ninja \
+        .. \
+    && sudo ninja install \
+    && sudo ldconfig \
+    && cd ../.. \
+    && rm -rf eigen-${EIGEN_VERSION}
+
+# nvidia-container-runtime
+ENV NVIDIA_VISIBLE_DEVICES all
+ENV NVIDIA_DRIVER_CAPABILITIES compute,utility,graphics
+ENV NVIDIA_REQUIRE_CUDA "cuda>=10.2"
+
+# architecture-specific build options
+ARG CUDA_ARCH_BIN=""
+
+# NOTE: the OpenGL backend is depricated in PCL 1.13, however the version of VTK for Ubuntu Bionic on Arm (i.e. vtk 6)
+# only supports OpenGL. VTK 7 does support OpenGL2, however it hasn't been published for Ubuntu Bionic aarch64. 
+ARG RENDERING_BACKEND=OpenGL
+
+# Clone and configure PCL repo.
+ARG PCL_VERSION="1.12.1"
+RUN wget --quiet --show-progress --progress=bar:force:noscroll https://github.com/PointCloudLibrary/pcl/releases/download/pcl-${PCL_VERSION}/source.zip \
+    && unzip source.zip && rm source.zip \
+    && mkdir pcl/build \
+    && cd pcl/build \
+    && echo "Configuring PCL ${PCL_VERSION},  CUDA_ARCH_BIN=${CUDA_ARCH_BIN}" \
+    && cmake \
+        -D CMAKE_BUILD_TYPE=Release \
+        -D VTK_RENDERING_BACKEND=${RENDERING_BACKEND} \
+        -D BUILD_CUDA=ON  \
+        -D BUILD_GPU=ON  \
+        -D BUILD_apps=OFF \
+        -D BUILD_benchmarks=OFF \
+        -D BUILD_examples=OFF \
+        -D BUILD_gpu_kinfu=OFF \
+        -D BUILD_gpu_kinfu_large_scale=OFF \
+        -D BUILD_gpu_kinfu_tools=OFF \
+        -D BUILD_simulation=OFF \
+        -D BUILD_surface_on_nurbs=OFF \
+        -D CMAKE_INSTALL_PREFIX=/usr/local/pcl-${PCL_VERSION%.*} \
+        -D CPACK_BINARY_DEB=ON \
+        -D CPACK_PACKAGE_INSTALL_DIRECTORY=/usr/local/pcl-${PCL_VERSION%.*} \
+        -D CPACK_PACKAGE_FILE_NAME="pcl-${PCL_VERSION}-$(dpkg --print-architecture)" \
+        -G Ninja \
+        ..
+
+# Build the PCL library.
+RUN cd pcl/build && ninja -j$(nproc)
+RUN cd pcl/build && ninja install
+
+# Package the PCL library.
+RUN cd pcl/build && ninja package
+
+# Export the PCL library 
+RUN cd pcl/build && tar -czvf PCL-${PCL_VERSION}-$(uname -i).tar.gz *.deb
+
