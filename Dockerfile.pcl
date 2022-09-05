@@ -103,4 +103,3 @@ RUN cd pcl/build && ninja package
 
 # Export the PCL library 
 RUN cd pcl/build && tar -czvf PCL-${PCL_VERSION}-$(uname -i).tar.gz *.deb
-
