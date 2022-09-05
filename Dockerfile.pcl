@@ -88,8 +88,7 @@ RUN wget --quiet --show-progress --progress=bar:force:noscroll https://github.co
         -D BUILD_simulation=OFF \
         -D BUILD_surface_on_nurbs=OFF \
         -D CMAKE_INSTALL_PREFIX=/usr/local/pcl-${PCL_VERSION%.*} \
-        -D CPACK_BINARY_DEB=ON \
-        -D CPACK_PACKAGE_INSTALL_DIRECTORY=/usr/local/pcl-${PCL_VERSION%.*} \
+        -D CPACK_PACKAGING_INSTALL_PREFIX=/usr/local/pcl-${PCL_VERSION%.*} \
         -D CPACK_PACKAGE_FILE_NAME="pcl-${PCL_VERSION}-$(dpkg --print-architecture)" \
         -G Ninja \
         ..
