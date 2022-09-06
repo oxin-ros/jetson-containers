@@ -33,11 +33,11 @@ apt-get install --yes --no-install-recommends \
     libqhull-dev \
     libqt5opengl5-dev \
     libusb-1.0-0-dev \
-    libvtk6-dev \
-    libvtk6-qt-dev \
+    libvtk${VTK_MAJOR_VERSION}-dev \
+    libvtk${VTK_MAJOR_VERSION}-qt-dev \
     libxt-dev \
     qtbase5-dev \
     sudo \
     tar \
     unzip \
-    wget 
+    wget
