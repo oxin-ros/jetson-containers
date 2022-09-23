@@ -31,8 +31,13 @@ build_pcl()
         # CUDA ARCH versions above 80 are only supported in CUDA 11 onwards.
         local cuda_arch_bin="50;52;53;60;61;62;70;72"
         local base_image="nvcr.io/nvidia/cudagl:10.2-devel-ubuntu18.04"
-        local vtk_major_version="7"
-        local rendering_backend="OpenGL2"
+        # The version of VTK that is used by ROS melodic is VTK 6.
+        local vtk_major_version="6"
+        local rendering_backend="OpenGL"
+
+        # VTK 7 supports OpenGL2, but conflicts with VTK 6 packages.
+        # local vtk_major_version="7"
+        # local rendering_backend="OpenGL2"
     fi
 
     echo "building PCL $pcl_version deb packages"
