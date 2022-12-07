@@ -17,6 +17,7 @@ apt-get install --yes --no-install-recommends \
     g++ \
     git \
     git-all \
+    libblas-dev \
     libboost-date-time-dev \
     libboost-filesystem-dev \
     libboost-iostreams-dev \

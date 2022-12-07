@@ -4,6 +4,7 @@ set -e
 source scripts/docker_base.sh
 
 PCL_VERSION=${1:-"1.12.1"}
+BUILD_THREAD_COUNT=${2:-"$(($(nproc)-1))"}
 
 build_pcl()
 {
@@ -26,11 +27,13 @@ build_pcl()
             local rendering_backend="OpenGL2"
         fi
     elif [ $ARCH = "x86_64" ]; then
-        local container_tag="pcl-builder:pcl$pcl_version"
+        local cuda_version="10.2"
+        local ubuntu_version="18.04"
+        local container_tag="pcl-builder:pcl$pcl_version-cuda$cuda_version-ubuntu$ubuntu_version"
         # CUDA ARCH versions below 50 are to be deprecated from CUDA 11.
         # CUDA ARCH versions above 80 are only supported in CUDA 11 onwards.
         local cuda_arch_bin="50;52;53;60;61;62;70;72"
-        local base_image="nvcr.io/nvidia/cudagl:10.2-devel-ubuntu18.04"
+        local base_image="nvcr.io/nvidia/cudagl:$cuda_version-devel-ubuntu$ubuntu_version"
         # The version of VTK that is used by ROS melodic is VTK 6.
         local vtk_major_version="6"
         local rendering_backend="OpenGL"
@@ -47,17 +50,19 @@ build_pcl()
             --build-arg PCL_VERSION=$pcl_version \
             --build-arg CUDA_ARCH_BIN=$cuda_arch_bin \
             --build-arg VTK_MAJOR_VERSION=$vtk_major_version \
-            --build-arg RENDERING_BACKEND=$rendering_backend
+            --build-arg RENDERING_BACKEND=$rendering_backend \
+            --build-arg BUILD_THREAD_COUNT=$BUILD_THREAD_COUNT
 
     echo "done building PCL $pcl_version deb packages"
 
     # copy deb packages to jetson-containers/packages directory
+    archive_name="pcl-$PCL_VERSION-$ARCH-ubuntu-$ubuntu_version.tar.gz"
     sudo docker run --rm \
             --volume $PWD/packages:/mount \
             $container_tag \
-            cp pcl/build/PCL-$PCL_VERSION-$ARCH.tar.gz /mount
+            cp pcl/build/$archive_name /mount
 
-    echo "packages are at $PWD/packages/PCL-$PCL_VERSION-$ARCH.tar.gz"
+    echo "packages are at $PWD/packages/$archive_name"
 }
 
 build_pcl $PCL_VERSION

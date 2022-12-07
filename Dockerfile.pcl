@@ -19,9 +19,15 @@ ENV LD_LIBRARY_PATH="/usr/local/cuda/lib64:${LD_LIBRARY_PATH}"
 
 WORKDIR /opt
 
-# Default to VTK 6 for backwards compatibility.
+# Check https://packages.ubuntu.com/search?suite=all&arch=any&searchon=names&keywords=libvtk%20qt-dev
+# for available packes for choosen Ubuntu version.
 ARG VTK_MAJOR_VERSION=6
 ENV VTK_MAJOR_VERSION=${VTK_MAJOR_VERSION}
+
+# Eigen patch (https://eigen.tuxfamily.org/bz/show_bug.cgi?id=1462) to fix issue metioned
+# in https://github.com/PointCloudLibrary/pcl/issues/3729 is available in Eigen 3.3.7.
+# Not needed from 20.04 since it is the default version from apt
+ARG EIGEN_MINIMUM_VERSION=3.3.7
 
 # install build dependencies
 COPY scripts/pcl_install_deps.sh pcl_install_deps.sh
@@ -36,28 +42,31 @@ RUN wget -qq https://apt.kitware.com/kitware-archive.sh \
 
 # Install updated CMake & Ninja.
 RUN apt-get update \
-    && apt-get install -y \
+    && apt-get install --yes --no-install-recommends \
         cmake \
-        ninja-build \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
+        ninja-build
 
 # Install Eigen3.
 # Eigen patch (https://eigen.tuxfamily.org/bz/show_bug.cgi?id=1462) to fix issue metioned
 # in https://github.com/PointCloudLibrary/pcl/issues/3729 is available in Eigen 3.3.7.
 # Not needed from 20.04 since it is the default version from apt.
-ARG EIGEN_VERSION="3.3.7"
-RUN wget --quiet --show-progress --progress=bar:force:noscroll https://gitlab.com/libeigen/eigen/-/archive/${EIGEN_VERSION}/eigen-${EIGEN_VERSION}.tar.gz \
-    && tar -xf eigen-${EIGEN_VERSION}.tar.gz && rm eigen-${EIGEN_VERSION}.tar.gz \
-    && mkdir eigen-${EIGEN_VERSION}/build \
-    && cd eigen-${EIGEN_VERSION}/build \
-    && cmake \
-        -G Ninja \
-        .. \
-    && sudo ninja install \
-    && sudo ldconfig \
-    && cd ../.. \
-    && rm -rf eigen-${EIGEN_VERSION}
+# Use libeigen3-dev if it meets the minimal version.
+# In most cases libeigen3-dev is already installed as a dependency of libvtk6-dev & libvtk7-dev, but not in every case (libvtk9 doesn't seem to have this dependency),
+# so install it from apt if the version is sufficient.
+RUN if dpkg --compare-versions $(apt-cache show --no-all-versions libeigen3-dev | grep -P -o 'Version:\s*\K.*') ge ${EIGEN_MINIMUM_VERSION}; then \
+        apt-get -V install -y libeigen3-dev ; \
+    else \
+        wget -qO- https://gitlab.com/libeigen/eigen/-/archive/${EIGEN_MINIMUM_VERSION}/eigen-${EIGEN_MINIMUM_VERSION}.tar.gz | tar xz \
+        && cd eigen-${EIGEN_MINIMUM_VERSION} \
+        && mkdir build \
+        && cd build \
+        && cmake \
+            -G Ninja \
+            .. \
+        && ninja -j$(nproc) install \
+        && cd ../.. \
+        && rm -rf eigen-${EIGEN_MINIMUM_VERSION}/ ; \
+    fi
 
 # nvidia-container-runtime
 ENV NVIDIA_VISIBLE_DEVICES all
@@ -66,14 +75,17 @@ ENV NVIDIA_REQUIRE_CUDA "cuda>=10.2"
 
 # architecture-specific build options
 ARG CUDA_ARCH_BIN=""
+ENV CUDA_ARCH_BIN=${CUDA_ARCH_BIN}
 
 # NOTE: the OpenGL backend is planned to be depricated in PCL 1.13.
 # The version of VTK for Ubuntu 18.04 aarch64 only supports OpenGL.
 # VTK 7 does support OpenGL2, however it hasn't been published for Ubuntu 18.04 aarch64.
 ARG RENDERING_BACKEND=OpenGL
+ENV RENDERING_BACKEND=${RENDERING_BACKEND}
 
 # Clone and configure PCL repo.
 ARG PCL_VERSION="1.12.1"
+ENV PCL_VERSION=${PCL_VERSION}
 RUN wget --quiet --show-progress --progress=bar:force:noscroll https://github.com/PointCloudLibrary/pcl/releases/download/pcl-${PCL_VERSION}/source.zip \
     && unzip source.zip && rm source.zip \
     && mkdir pcl/build \
@@ -90,21 +102,24 @@ RUN wget --quiet --show-progress --progress=bar:force:noscroll https://github.co
         -D BUILD_examples=OFF \
         -D BUILD_gpu_kinfu=OFF \
         -D BUILD_gpu_kinfu_large_scale=OFF \
-        -D BUILD_gpu_kinfu_tools=OFF \
         -D BUILD_simulation=OFF \
         -D BUILD_surface_on_nurbs=OFF \
-        -D CMAKE_INSTALL_PREFIX=/usr/local/pcl-${PCL_VERSION%.*} \
-        -D CPACK_PACKAGING_INSTALL_PREFIX=/usr/local/pcl-${PCL_VERSION%.*} \
+        -D CMAKE_INSTALL_PREFIX=/usr/local \
+        -D CPACK_PACKAGING_INSTALL_PREFIX=/usr/local \
         -D CPACK_PACKAGE_FILE_NAME="pcl-${PCL_VERSION}-$(dpkg --print-architecture)" \
         -G Ninja \
         ..
 
 # Build the PCL library.
-RUN cd pcl/build && ninja -j$(nproc)
+ARG BUILD_THREAD_COUNT
+RUN cd pcl/build && ninja -j${BUILD_THREAD_COUNT}
 RUN cd pcl/build && ninja install
 
 # Package the PCL library.
 RUN cd pcl/build && ninja package
 
+# Install ccache.
+RUN apt-get install --yes --no-install-recommends lsb-release
+
 # Export the PCL library.
-RUN cd pcl/build && tar -czvf PCL-${PCL_VERSION}-$(uname -i).tar.gz *.deb
+RUN cd pcl/build && tar -czvf pcl-${PCL_VERSION}-$(uname -i)-ubuntu-$(lsb_release -sr).tar.gz *.deb
