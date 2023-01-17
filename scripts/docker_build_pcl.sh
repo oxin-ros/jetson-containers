@@ -4,11 +4,13 @@ set -e
 source scripts/docker_base.sh
 
 PCL_VERSION=${1:-"1.12.1"}
-BUILD_THREAD_COUNT=${2:-"$(($(nproc)-1))"}
+ROS_VERSION=${2:-"melodic"}
+BUILD_THREAD_COUNT=${3:-"$(($(nproc)-1))"}
 
 build_pcl()
 {
     local pcl_version=$1
+    local ros_version=$2
 
     if [ $ARCH = "aarch64" ]; then
         local container_tag="pcl-builder:r$L4T_VERSION-pcl$pcl_version"
@@ -27,20 +29,39 @@ build_pcl()
             local rendering_backend="OpenGL2"
         fi
     elif [ $ARCH = "x86_64" ]; then
-        local cuda_version="10.2"
-        local ubuntu_version="18.04"
-        local container_tag="pcl-builder:pcl$pcl_version-cuda$cuda_version-ubuntu$ubuntu_version"
-        # CUDA ARCH versions below 50 are to be deprecated from CUDA 11.
-        # CUDA ARCH versions above 80 are only supported in CUDA 11 onwards.
-        local cuda_arch_bin="50;52;53;60;61;62;70;72"
-        local base_image="nvcr.io/nvidia/cudagl:$cuda_version-devel-ubuntu$ubuntu_version"
-        # The version of VTK that is used by ROS melodic is VTK 6.
-        local vtk_major_version="6"
-        local rendering_backend="OpenGL"
 
-        # VTK 7 supports OpenGL2, but conflicts with VTK 6 packages.
-        # local vtk_major_version="7"
-        # local rendering_backend="OpenGL2"
+        if [ $ros_version = "melodic" ]; then
+            #
+            # ROS Melodic settings compatibile with jetpack.
+            #
+            local cuda_version="10.2"
+            local ubuntu_version="18.04"
+            # The version of VTK that is used by ROS melodic is VTK 6.
+            local vtk_major_version="6"
+            local rendering_backend="OpenGL"
+            # CUDA ARCH versions below 50 are to be deprecated from CUDA 11.
+            # CUDA ARCH versions above 80 are only supported in CUDA 11 onwards.
+            # See http://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards for more info.
+            local cuda_arch_bin="50;52;53;60;61;62;70;72"
+        elif [ $ros_version = "noetic" ]; then
+            #
+            # ROS Noetic settings compatible with jetpack.
+            #
+            local cuda_version="11.4.1"
+            local ubuntu_version="20.04"
+            # VTK 7 supports OpenGL2, but conflicts with VTK 6 packages.
+            local vtk_major_version="7"
+            local rendering_backend="OpenGL2"
+            # CUDA ARCH versions below 50 are to be deprecated from CUDA 11.
+            # CUDA ARCH versions above 80 are only supported in CUDA 11 onwards.
+            # See http://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards for more info.
+            local cuda_arch_bin="60;61;62;70;72;80;86"
+        fi
+        #
+        # Container build settings.
+        #
+        local container_tag="pcl-builder:pcl$pcl_version-cuda$cuda_version-ubuntu$ubuntu_version"
+        local base_image="nvcr.io/nvidia/cudagl:$cuda_version-devel-ubuntu$ubuntu_version"
     fi
 
     echo "building PCL $pcl_version deb packages"
@@ -65,4 +86,4 @@ build_pcl()
     echo "packages are at $PWD/packages/$archive_name"
 }
 
-build_pcl $PCL_VERSION
+build_pcl $PCL_VERSION $ROS_VERSION
