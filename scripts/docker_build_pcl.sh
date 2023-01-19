@@ -38,9 +38,12 @@ build_pcl()
 
             local vtk_major_version="6"
             local rendering_backend="OpenGL"
-        elif [ $L4T_RELEASE -eq 34 ]; then # Ubuntu 20.04
+        elif [ $L4T_RELEASE -eq 34 || $L4T_RELEASE -eq 35]; then # Ubuntu 20.04
             local vtk_major_version="7"
             local rendering_backend="OpenGL2"
+        else
+            echo "Unsupported L4T_RELEASE v$L4T_RELEASE"
+            exit 1
         fi
     elif [ $ARCH = "x86_64" ]; then
         if [ $ros_version = "melodic" ]; then # Ubuntu 18.04
