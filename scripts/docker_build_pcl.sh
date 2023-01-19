@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-set -x
+# Uncomment for script debugging.
+# set -x
 source scripts/docker_base.sh
 
 PCL_VERSION=${1:-"1.12.1"}
