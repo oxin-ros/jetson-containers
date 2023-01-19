@@ -1,11 +1,17 @@
 #!/usr/bin/env bash
 
-set -e
+set -x
 source scripts/docker_base.sh
 
 PCL_VERSION=${1:-"1.12.1"}
 ROS_VERSION=${2:-"melodic"}
 BUILD_THREAD_COUNT=${3:-"$(($(nproc)-1))"}
+
+# https://unix.stackexchange.com/questions/285924/how-to-compare-a-programs-version-in-a-shell-script
+version_greater_equal()
+{
+    printf '%s\n%s\n' "$2" "$1" | sort --check=quiet --version-sort
+}
 
 build_pcl()
 {
@@ -18,10 +24,17 @@ build_pcl()
         # See http://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards for more info.
         local cuda_arch_bin="53,62,72"
         local base_image=$BASE_IMAGE
-        if [ $L4T_RELEASE -eq 32 ]; then
-            # NOTE: the OpenGL backend is planned to be depricated in PCL 1.13.
+        if [ $L4T_RELEASE -eq 32 ]; then # Ubuntu 18.04
+            # Check if PCL 1.13 or newer is requrested.
+            # Note: the OpenGL backend is depricated in PCL 1.13.
             # The version of VTK for Ubuntu 18.04 aarch64 only supports OpenGL.
             # VTK 7 does support OpenGL2, however it hasn't been published for Ubuntu 18.04 aarch64.
+            version_greater_equal $pcl_version "1.13"
+            if [ $? -eq 0 ]; then
+                echo "PCL v$pcl_version is not supported on Ubuntu 18.04."
+                exit 1
+            fi
+
             local vtk_major_version="6"
             local rendering_backend="OpenGL"
         elif [ $L4T_RELEASE -eq 34 ]; then # Ubuntu 20.04
@@ -29,8 +42,16 @@ build_pcl()
             local rendering_backend="OpenGL2"
         fi
     elif [ $ARCH = "x86_64" ]; then
+        if [ $ros_version = "melodic" ]; then # Ubuntu 18.04
+            # Check if PCL 1.13 or newer is requrested.
+            # Note: the OpenGL backend is depricated in PCL 1.13.
+            # The version of VTK that is used by ROS melodic is VTK 6, which only supports OpenGL.
+            version_greater_equal $pcl_version "1.13"
+            if [ $? -eq 0 ]; then
+                echo "PCL v$pcl_version is not supported on melodic."
+                exit 1
+            fi
 
-        if [ $ros_version = "melodic" ]; then
             #
             # ROS Melodic settings compatibile with jetpack.
             #
