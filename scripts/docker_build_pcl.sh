@@ -95,7 +95,11 @@ build_pcl()
             --build-arg RENDERING_BACKEND=$rendering_backend \
             --build-arg BUILD_THREAD_COUNT=$BUILD_THREAD_COUNT
 
-    echo "done building PCL $pcl_version deb packages"
+    if [ $? -ne 0 ]; then
+        echo "failed to build PCL v$pcl_version deb packages"
+        exit 1
+    fi
+    echo "done building PCL v$pcl_version deb packages"
 
     # copy deb packages to jetson-containers/packages directory
     archive_name="pcl-$PCL_VERSION-$ARCH-ubuntu-$ubuntu_version.tar.gz"
