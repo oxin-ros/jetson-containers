@@ -23,7 +23,7 @@ build_pcl()
         local container_tag="pcl-builder:r$L4T_VERSION-pcl$pcl_version"
         # Only SM_53, SM_62, & SM_72 are built since they correspond to the Jetson devices.
         # See http://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards for more info.
-        local cuda_arch_bin="53,62,72"
+        local cuda_arch_bin="53;62;72"
         local base_image=$BASE_IMAGE
         if [ $L4T_RELEASE -eq 32 ]; then # Ubuntu 18.04
             # Check if PCL 1.13 or newer is requrested.
