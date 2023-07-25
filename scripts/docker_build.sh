@@ -10,4 +10,4 @@ shift
 
 echo "Building $CONTAINER container..."
 
-sudo docker build --network=host -t $CONTAINER -f $DOCKERFILE "$@" .
+docker build --network=host -t $CONTAINER -f $DOCKERFILE "$@" .

@@ -35,10 +35,18 @@ RUN ./pcl_install_deps.sh
 
 # Install Kitware APT repo.
 # This repo contains updated CMake & Ninja packages.
-RUN wget -qq https://apt.kitware.com/kitware-archive.sh \
-    && sudo chmod +x kitware-archive.sh \
-    && ./kitware-archive.sh \
-    && rm ./kitware-archive.sh
+# NOTE: Kitware does not work for Ubuntu 18.04 anymore.
+RUN wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | sudo apt-key add - \
+    && sudo apt-get update \
+    && sudo apt-get install --yes software-properties-common \
+    && apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -sc) main" \
+    && sudo apt-get update \
+    && sudo apt-get install --yes --no-install-recommends \
+        cmake \
+        kitware-archive-keyring \
+        ninja-build \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
 
 # Install updated CMake & Ninja.
 RUN apt-get update \
@@ -86,8 +94,7 @@ ENV RENDERING_BACKEND=${RENDERING_BACKEND}
 # Clone and configure PCL repo.
 ARG PCL_VERSION="1.12.1"
 ENV PCL_VERSION=${PCL_VERSION}
-RUN wget --quiet --show-progress --progress=bar:force:noscroll https://github.com/PointCloudLibrary/pcl/releases/download/pcl-${PCL_VERSION}/source.zip \
-    && unzip source.zip && rm source.zip \
+RUN git clone -b pcl-${PCL_VERSION} https://github.com/oxin-ros/pcl.git \
     && mkdir pcl/build \
     && cd pcl/build \
     && echo "Configuring PCL ${PCL_VERSION}, RENDERING_BACKEND=${RENDERING_BACKEND}, CUDA_ARCH_BIN=${CUDA_ARCH_BIN}" \
