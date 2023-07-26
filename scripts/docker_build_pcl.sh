@@ -108,7 +108,7 @@ build_pcl()
 
     # copy deb packages to jetson-containers/packages directory
     archive_name="pcl-$PCL_VERSION-$ARCH-ubuntu-$ubuntu_version.tar.gz"
-    sudo docker run --rm \
+    docker run --rm \
             --volume $PWD/packages:/mount \
             $container_tag \
             cp pcl/build/$archive_name /mount
