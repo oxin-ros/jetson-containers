@@ -36,6 +36,7 @@ build_pcl()
                 exit 1
             fi
 
+            local ubuntu_version="18.04"
             local vtk_major_version="6"
             local rendering_backend="OpenGL"
         elif [ $L4T_RELEASE -eq 34 || $L4T_RELEASE -eq 35]; then # Ubuntu 20.04
