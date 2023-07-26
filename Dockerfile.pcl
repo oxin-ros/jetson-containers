@@ -39,7 +39,8 @@ RUN ./pcl_install_deps.sh
 RUN wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | sudo apt-key add - \
     && sudo apt-get update \
     && sudo apt-get install --yes software-properties-common \
-    && apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -sc) main" \
+    && sudo apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -sc) main" \
+    && sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 42D5A192B819C5DA \
     && sudo apt-get update \
     && sudo apt-get install --yes --no-install-recommends \
         cmake \
