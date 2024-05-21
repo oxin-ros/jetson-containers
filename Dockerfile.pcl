@@ -21,7 +21,7 @@ WORKDIR /opt
 
 # Check https://packages.ubuntu.com/search?suite=all&arch=any&searchon=names&keywords=libvtk%20qt-dev
 # for available packes for choosen Ubuntu version.
-ARG VTK_MAJOR_VERSION=6
+ARG VTK_MAJOR_VERSION=7
 ENV VTK_MAJOR_VERSION=${VTK_MAJOR_VERSION}
 
 # Eigen patch (https://eigen.tuxfamily.org/bz/show_bug.cgi?id=1462) to fix issue metioned
@@ -93,10 +93,17 @@ ENV CUDA_ARCH_BIN=${CUDA_ARCH_BIN}
 ARG RENDERING_BACKEND=OpenGL
 ENV RENDERING_BACKEND=${RENDERING_BACKEND}
 
+# Install VTK
+RUN cd /opt && git clone https://github.com/Kitware/VTK.git VTK
+RUN cd /opt/VTK && git checkout tags/v9.3.0
+RUN cd /opt/VTK && mkdir build
+RUN cd /opt/VTK/build && cmake -DCMAKE_BUILD_TYPE:STRING=Release -D VTK_RENDERING_BACKEND=${RENDERING_BACKEND} ..
+RUN cd /opt/VTK/build && make -j12 && make install
+
 # Clone and configure PCL repo.
 ARG PCL_VERSION="1.12.1"
 ENV PCL_VERSION=${PCL_VERSION}
-RUN git clone -b pcl-${PCL_VERSION} https://github.com/oxin-ros/pcl.git \
+RUN git clone -b pcl-${PCL_VERSION} https://github.com/PointCloudLibrary/pcl.git \
     && mkdir pcl/build \
     && cd pcl/build \
     && echo "Configuring PCL ${PCL_VERSION}, RENDERING_BACKEND=${RENDERING_BACKEND}, CUDA_ARCH_BIN=${CUDA_ARCH_BIN}" \
@@ -113,6 +120,8 @@ RUN git clone -b pcl-${PCL_VERSION} https://github.com/oxin-ros/pcl.git \
         -D BUILD_gpu_kinfu_large_scale=OFF \
         -D BUILD_simulation=OFF \
         -D BUILD_surface_on_nurbs=OFF \
+	-D BUILD_visualization=ON \
+	-D VTK_DIR=/opt/VTK/build \
         -D CMAKE_INSTALL_PREFIX=/usr/local \
         -D CPACK_PACKAGING_INSTALL_PREFIX=/usr/local \
         -D CPACK_PACKAGE_FILE_NAME="pcl-${PCL_VERSION}-$(dpkg --print-architecture)" \

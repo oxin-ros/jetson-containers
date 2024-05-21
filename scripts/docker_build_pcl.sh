@@ -4,8 +4,8 @@
 # set -x
 source scripts/docker_base.sh
 
-PCL_VERSION=${1:-"1.12.1"}
-ROS_VERSION=${2:-"melodic"}
+PCL_VERSION=${1:-"1.14.1"}
+ROS_VERSION=${2:-"noetic"}
 BUILD_THREAD_COUNT=${3:-"$(($(nproc)-1))"}
 
 # https://unix.stackexchange.com/questions/285924/how-to-compare-a-programs-version-in-a-shell-script
@@ -73,10 +73,10 @@ build_pcl()
             #
             # ROS Noetic settings compatible with jetpack.
             #
-            local cuda_version="11.4.1"
+            local cuda_version="12.4.1"
             local ubuntu_version="20.04"
             # VTK 7 supports OpenGL2, but conflicts with VTK 6 packages.
-            local vtk_major_version="7"
+            local vtk_major_version="9"
             local rendering_backend="OpenGL2"
             # CUDA ARCH versions below 50 are to be deprecated from CUDA 11.
             # CUDA ARCH versions above 80 are only supported in CUDA 11 onwards.
@@ -87,7 +87,7 @@ build_pcl()
         # Container build settings.
         #
         local container_tag="pcl-builder:pcl$pcl_version-cuda$cuda_version-ubuntu$ubuntu_version"
-        local base_image="nvcr.io/nvidia/cudagl:$cuda_version-devel-ubuntu$ubuntu_version"
+        local base_image="nvidia/cuda:$cuda_version-devel-ubuntu$ubuntu_version"
     fi
 
     echo "building PCL $pcl_version deb packages"
